@@ -1,0 +1,5 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:tns="http://example.com/additional"
+            targetNamespace="http://example.com/additional">
+    <xsd:element name="AdditionalElement" type="xsd:string"/>
+</xsd:schema>

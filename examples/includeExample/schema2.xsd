@@ -1,0 +1,12 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:tns="http://example.com/schema2"
+            targetNamespace="http://example.com/schema2">
+    <xsd:import namespace="http://example.com/common" schemaLocation="common.xsd"/>
+    <xsd:include schemaLocation="additional.xsd"/>
+    <xsd:element name="ExampleElement" type="tns:ExampleType"/>
+    <xsd:complexType name="ExampleType">
+        <xsd:sequence>
+            <xsd:element name="exampleField" type="xsd:string"/>
+        </xsd:sequence>
+    </xsd:complexType>
+</xsd:schema>

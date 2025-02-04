@@ -518,41 +518,49 @@ namespace Microsoft.Azure.ApiManagement.WsdlProcessor.Common
             IEnumerable<XElement> newElements,
             Dictionary<string, string> namespaces)
         {
+            // Capture all declared xmlns attributes
             var parentNamespaces = documentElement
-            .Attributes()
-            .Where(a => a.ToString()
-            .Contains("xmlns:"))
-            .Select(a => new
-            {
-                Prefix = a.Name.LocalName,
-                Namespace = a.Value
-            }).ToDictionary(a => a.Namespace, a => a.Prefix);
+                .Attributes()
+                .Where(a => a.IsNamespaceDeclaration)
+                .Select(a => new { Prefix = a.Name.LocalName, Namespace = a.Value })
+                .ToDictionary(a => a.Namespace + "_" + a.Prefix, a => a.Prefix); // composite key
 
             foreach (var item in namespaces)
             {
-                //string prefix = string.Empty;
-                parentNamespaces.TryGetValue(item.Key, out string prefix);
-
-                if (prefix == null)
+                string desiredPrefix = item.Value;
+                string prefix = null;
+                var attr = documentElement.Attribute(XNamespace.Xmlns + desiredPrefix);
+                if (attr != null)
                 {
-                    prefix = GenerateNewNamespace(documentElement, parentNamespaces, item);
+                    if (attr.Value == item.Key)
+                    {
+                        prefix = desiredPrefix;
+                    }
+                    else
+                    {
+                        prefix = GenerateNewNamespace(documentElement, parentNamespaces, item);
+                    }
+                }
+                else
+                {
+                    documentElement.Add(new XAttribute(XNamespace.Xmlns + desiredPrefix, item.Key));
+                    parentNamespaces.Add(item.Key + "_" + desiredPrefix, desiredPrefix);
+                    prefix = desiredPrefix;
                 }
 
-                //Modify attributes from elements with the same prefix
+                // Modify attributes from elements that reference the old prefix
                 var prefixValue = item.Value + ":";
-
                 foreach (var element in newElements.DescendantsAndSelf())
                 {
-                    //Go through all attributes and modify if they have the prefix
+                    // Go through all attributes and modify if they have the prefix
                     var attributes = element
-                    .Attributes()
-                    .Where(e => e.Value.Contains(prefixValue));
-
+                        .Attributes()
+                        .Where(e => e.Value.Contains(prefixValue));
                     foreach (var attribute in attributes)
                     {
                         if (attribute.Value.Count(i => i == ':') == 1
-                        && !(Uri.TryCreate(attribute.Value, UriKind.Absolute, out var uriResult)
-                        && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
+                            && !(Uri.TryCreate(attribute.Value, UriKind.Absolute, out var uriResult)
+                                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
                         {
                             var splitValue = attribute.Value.Split(':');
                             attribute.Value = prefix + ":" + splitValue[1];
